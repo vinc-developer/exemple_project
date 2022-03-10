@@ -60,6 +60,10 @@ const updateUser = async (req, res) => {
 
 }
 
+const updatePassword = async (req, res) => {
+
+}
+
 const remove = async (req, res) => {
     const { id } = req.params;
     try {
@@ -79,7 +83,8 @@ module.exports = {
     getAll,
     register,
     updateUser,
-    remove
+    remove,
+    updatePassword
 }
 
 function compareDate(dateOfBirthday){
