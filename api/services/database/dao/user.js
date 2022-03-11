@@ -2,18 +2,27 @@ const log = require("../../../log/logger");
 const database = require("../tools/database");
 const User = require("../../models/Users");
 
-const SELECT_BY_ID = `SELECT * FROM user WHERE id = ?`;
 const SELECT_ALL = `SELECT * FROM user`;
 const SELECT_EMAIL = `SELECT id FROM user WHERE email = ?`;
-const SQL_INSERT = `INSERT INTO user SET fistname = ?, lastname = ?, email = ?, password = ?, date_of_birthday = ?, date_created = ?`;
+const SQL_INSERT = `INSERT INTO user SET firstname = ?, lastname = ?, email = ?, password = ?, date_of_birthday = ?, id_address= ?, date_created = ?`;
 const SQL_DELETE = `DELETE FROM user WHERE id = ?`;
+const SELECT_USER_WITH_ADDRESS = `SELECT u.id, u.firstname, u.lastname, u.email, u.password, u.date_of_birthday, u.date_created,
+                                         (SELECT JSON_OBJECT(
+                                                 'id',a.id,
+                                                 'number', a.number,
+                                                 'additionalAddress', a.additional_address,
+                                                 'zipCode', a.zipcode,
+                                                 'city', a.city,
+                                                 'country', a.country)
+                                          FROM address a WHERE a.id = u.id_address ) AS address
+                                  FROM user u WHERE u.id = ?`;
 
 async function getById(id) {
     let connexion = null;
     try{
         connexion = await database.getConnection();
-        const [user] = await connexion.execute(SELECT_BY_ID, [id]);
-        const userClass = new User(user.id, user.firstname, user.lastname, user.email, user.password, user.date_of_birthday, user.date_created);
+        const [user] = await connexion.execute(SELECT_USER_WITH_ADDRESS, [id]);
+        const userClass = new User(user[0].id, user[0].firstname, user[0].lastname, user[0].email, user[0].password, user[0].date_of_birthday, user[0].address,  user[0].date_created);
         return userClass;
     } catch(e) {
         log.error("Error in getById dao : " + e);
@@ -49,7 +58,7 @@ async function register(User) {
     const date = new Date();
     try{
         con = await database.getConnection();
-        const [idCreated] = await con.execute(SQL_INSERT, [User.firstname, User.lastname, User.email, User.password, User.dateOfBirthday, date]);
+        const [idCreated] = await con.execute(SQL_INSERT, [User.firstname, User.lastname, User.email, User.password, User.dateOfBirthday, User.address, date]);
         const id = idCreated.insertId;
         const user = await getById(id);
         return user;
@@ -85,10 +94,12 @@ async function getEmail(email) {
     try{
         connexion = await database.getConnection();
         const [id] = await connexion.execute(SELECT_EMAIL, [email]);
-        if (id){
+        if (id.length > 0) {
           return true;
+        } else{
+            return false;
         }
-        return false;
+
     } catch(e) {
         log.error("Error in getById dao : " + e);
     } finally {

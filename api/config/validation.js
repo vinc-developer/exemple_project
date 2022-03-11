@@ -36,6 +36,7 @@ const registerValidation = (data) => {
                 "string.pattern.base": `Le mot de passe ne correspond pas au modèle demandé (minimum 6 caractères contenant au moins : 1 lettre majuscule, 1 lettre minuscule, 1 chiffre et 1 caractère spécial (@#$%^&-+=())`,
             }),
         dateOfBirthday: joi.date(),
+        address: joi.any()
     });
     return schema.validate(data);
 };

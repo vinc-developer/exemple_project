@@ -1,7 +1,9 @@
 const log = require("../log/logger");
 const User = require("../services/models/Users");
 const userDAO = require("../services/database/dao/user");
+const addressDAO = require("../services/database/dao/address");
 const { registerValidation } = require("../config/validation");
+const bcrypt = require("bcryptjs");
 
 const getById = async (req, res) => {
     const { id } = req.params;
@@ -23,7 +25,7 @@ const getAll = async (req, res) => {
 }
 
 const register = async (req, res) => {
-     const { firstname, lastname, email, password, confirmPassword, dateOfBirthday } = req.body.User;
+     const { firstname, lastname, email, password, confirmPassword, dateOfBirthday, address } = req.body.User;
      const { error } = registerValidation(req.body.User);
 
      if (error) {
@@ -35,7 +37,7 @@ const register = async (req, res) => {
     if(compareDate(dateOfBirthday)){
         return res.status(403).send({error: "Vous ne pouvez pas utilisez l'application car vous êtes mineur."});
     }
-    const checkEmail = userDAO.getEmail(email);
+    const checkEmail = await userDAO.getEmail(email);
     if(checkEmail){
         return res.status(403).send({error: "L'email existe deja."});
     }
@@ -43,7 +45,8 @@ const register = async (req, res) => {
      try{
          const salt = await bcrypt.genSalt(12);
          const hashedPassword = await bcrypt.hash(password, salt);
-         const userClass = User.UserRegister(firstname, lastname, email, password, dateOfBirthday);
+         const newAddress = await addressDAO.insert(address);
+         const userClass = User.UserRegister(firstname, lastname, email, hashedPassword, dateOfBirthday, newAddress.id);
          const user = await userDAO.register(userClass);
          // creer le token
 
