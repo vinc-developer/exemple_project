@@ -1,2 +1,6 @@
 # Project exclude paths
 /api/node_modules/
+
+/api/log/logger.logger
+
+.idea
