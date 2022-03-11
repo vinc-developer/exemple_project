@@ -41,6 +41,22 @@ async function getById(id) {
     }
 }
 
+async function getByEmail(email) {
+    let connexion = null;
+    try{
+        connexion = await database.getConnection();
+        const [id] = await connexion.execute(SELECT_EMAIL, [email]);
+        const user = await getById(id);
+        return user;
+    } catch(e) {
+        log.error("Error in getById dao : " + e);
+    } finally {
+        if (connexion !== null) {
+            connexion.end();
+        }
+    }
+}
+
 async function getAll() {
     let con = null;
     try{
@@ -167,5 +183,6 @@ module.exports = {
     remove,
     getEmail,
     updatePassword,
-    updateEmail
+    updateEmail,
+    getByEmail
 }

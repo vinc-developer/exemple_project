@@ -4,6 +4,31 @@ const userDAO = require("../services/database/dao/user");
 const addressDAO = require("../services/database/dao/address");
 const { registerValidation, verifUpdatePassword, verifUpdateUser } = require("../config/validation");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const login = async (req, res) => {
+    const { email, password } = req.body.User;
+    try{
+        const userBack = await userDAO.getByEmail(email);
+        if(!userBack){
+            return res.status(403).send({ "Error": "Le mail n'existe pas." });
+        }
+        const validPassword = await bcrypt.compare(password, userBack.password);
+        if(!validPassword){
+            return res.status(401).send({ "Error": "Les mots de passe ne correspond pas !" });
+        }
+
+        const playoad = {id: userBack.id};
+        const token = jwt.sign(playoad, process.env.TOKEN_SECRET, { expiresIn: 7200});
+        let refreshToken = jwt.sign(playoad, process.env.REFRESH_TOKEN_SECRET, { expiresIn: 7200});
+
+        delete userBack.password;
+
+        return res.status(200).send({"Message": "Connection réussie", "User": userBack, "idToken": token, "refreshToken": refreshToken});
+    }catch (e) {
+        log.error("Error in login controller : " + e);
+    }
+}
 
 const getById = async (req, res) => {
     const { id } = req.params;
@@ -126,7 +151,8 @@ module.exports = {
     register,
     updateUser,
     remove,
-    updatePassword
+    updatePassword,
+    login
 }
 
 function compareDate(dateOfBirthday){
