@@ -2,7 +2,7 @@ const log = require("../log/logger");
 const User = require("../services/models/Users");
 const userDAO = require("../services/database/dao/user");
 const addressDAO = require("../services/database/dao/address");
-const { registerValidation } = require("../config/validation");
+const { registerValidation, verifUpdatePassword, verifUpdateUser } = require("../config/validation");
 const bcrypt = require("bcryptjs");
 
 const getById = async (req, res) => {
@@ -60,16 +60,55 @@ const register = async (req, res) => {
 }
 
 const updateUser = async (req, res) => {
+    const { id, lastname, firstname, email } = req.body.User;
+    const { error } = verifUpdateUser(req.body.User);
+    if (error) {
+        return res.status(403).send({"Error": error.details[0].message});
+    }
+    const userBack = await userDAO.getById(id);
+
+    if(email !== userBack.email){
+        const checkEmail = await userDAO.getEmail(email);
+        if(checkEmail){
+           return res.status(403).send({error: "L'email existe deja."});
+        }else{
+            await userDAO.updateEmail(email, id);
+        }
+    }
+
+    const userClass = User.UserUpdate(id, firstname, lastname, email);
+
+    const user = await userDAO.updateUser(userClass);
+    res.status(200).send({"User": user})
 
 }
 
 const updatePassword = async (req, res) => {
-
+    const { id, password, confirmPassword } = req.body.User;
+    const {error} = verifUpdatePassword(req.body.User);
+    if (error) {
+        return res.status(403).send({"Error": error.details[0].message});
+    }
+    if (password !== confirmPassword) {
+        return res.status(403).send({"Error": "Mot de passe différent de la confirmation !"});
+    }
+    try{
+        const salt = await bcrypt.genSalt(12);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        const verif = await userDAO.updatePassword(id, hashedPassword);
+        if(verif){
+            res.status(200).send({"Message": "Mot de passe modifier"});
+        }
+    }catch (e) {
+        log.error("Error userController updatePassword : " + e);
+    }
 }
 
 const remove = async (req, res) => {
     const { id } = req.params;
     try {
+        const userBack = await userDAO.getById(id);
+        await addressDAO.remove(userBack.address.id);
         await userDAO.remove(id);
         const user = await userDAO.getById(id);
         user.length > 0 ?

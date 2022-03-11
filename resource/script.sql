@@ -24,4 +24,4 @@ CREATE TABLE `address`(
 )Engine = InnoDB;
 
 /* on peut supprimer l'adresse mais pas la mettre à jour */
-ALTER TABLE `user` ADD CONSTRAINT `fk_user_address` FOREIGN KEY (`id_address`) REFERENCES `address`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE `user` ADD CONSTRAINT `fk_user_address` FOREIGN KEY (`id_address`) REFERENCES `address`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;

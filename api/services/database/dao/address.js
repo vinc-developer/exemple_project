@@ -4,6 +4,7 @@ const database = require("../tools/database");
 
 const SQL_INSERT = `INSERT INTO address (number, street, additional_address, zipcode, city, country) VALUES (?, ?, ?, ?, ?, ?)`;
 const SELECT_BY_ID = `SELECT * FROM address WHERE id = ?`;
+const SQL_DELETE = `DELETE FROM address WHERE id = ?`;
 
 async function insert(Address) {
     let con = null;
@@ -38,7 +39,22 @@ async function getById(id) {
     }
 }
 
+async function remove(id) {
+    let connexion = null;
+    try{
+        connexion = await database.getConnection();
+        await connexion.execute(SQL_DELETE, [id]);
+    } catch(e) {
+        log.error("Error in remove addressDao : " + e);
+    } finally {
+        if (connexion !== null) {
+            connexion.end();
+        }
+    }
+}
+
 module.exports = {
     insert,
-    getById
+    getById,
+    remove
 }

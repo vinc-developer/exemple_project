@@ -13,4 +13,8 @@ module.exports = class User{
     static UserRegister(firstname, lastname, email, password, dateOfBirthday, address){
         return new User(null, firstname, lastname, email, password, dateOfBirthday, address, null);
     };
+
+    static UserUpdate(id, firstname, lastname, email){
+        return new User(id, firstname, lastname, email, null, null, null, null);
+    }
 }

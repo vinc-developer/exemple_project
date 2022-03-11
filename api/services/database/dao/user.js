@@ -5,6 +5,9 @@ const User = require("../../models/Users");
 const SELECT_ALL = `SELECT * FROM user`;
 const SELECT_EMAIL = `SELECT id FROM user WHERE email = ?`;
 const SQL_INSERT = `INSERT INTO user SET firstname = ?, lastname = ?, email = ?, password = ?, date_of_birthday = ?, id_address= ?, date_created = ?`;
+const SQL_UPDATE_PASSWORD = `UPDATE user SET password = ? WHERE id = ?`;
+const SQL_UPDATE_USER = `UPDATE user SET firstname = ?, lastname = ? WHERE id = ?`;
+const SQL_UPDATE_EMAIL = `UPDATE user SET email = ? WHERE id = ?`;
 const SQL_DELETE = `DELETE FROM user WHERE id = ?`;
 const SELECT_USER_WITH_ADDRESS = `SELECT u.id, u.firstname, u.lastname, u.email, u.password, u.date_of_birthday, u.date_created,
                                          (SELECT JSON_OBJECT(
@@ -22,10 +25,15 @@ async function getById(id) {
     try{
         connexion = await database.getConnection();
         const [user] = await connexion.execute(SELECT_USER_WITH_ADDRESS, [id]);
-        const userClass = new User(user[0].id, user[0].firstname, user[0].lastname, user[0].email, user[0].password, user[0].date_of_birthday, user[0].address,  user[0].date_created);
-        return userClass;
+        if (user.length > 0) {
+            const userClass = new User(user[0].id, user[0].firstname, user[0].lastname, user[0].email, user[0].password, user[0].date_of_birthday, user[0].address,  user[0].date_created);
+            return userClass;
+        } else{
+           return user;
+        }
+
     } catch(e) {
-        log.error("Error in getById dao : " + e);
+        log.error("Error in getById userDao : " + e);
     } finally {
         if (connexion !== null) {
             connexion.end();
@@ -36,7 +44,7 @@ async function getById(id) {
 async function getAll() {
     let con = null;
     try{
-        con = database.getConnection();
+        con = await database.getConnection();
         const [users] = await con.execute(SELECT_ALL);
         let listUsers = [];
         for (let i = 0; i < users.length; i++) {
@@ -72,7 +80,34 @@ async function register(User) {
 }
 
 async function updateUser(User) {
+    let connexion = null;
+    try{
+        connexion = await database.getConnection();
+        await connexion.execute(SQL_UPDATE_USER, [User.firstname, User.lastname, User.id]);
+        const user = await getById(User.id);
+        return user;
+    } catch(e) {
+        log.error("Error in update user dao : " + e);
+    } finally {
+        if (connexion !== null) {
+            connexion.end();
+        }
+    }
+}
 
+async function updateEmail(email, id) {
+    let connexion = null;
+    try{
+        connexion = await database.getConnection();
+        await connexion.execute(SQL_UPDATE_EMAIL, [email, id]);
+        return true;
+    } catch(e) {
+        log.error("Error in update email dao : " + e);
+    } finally {
+        if (connexion !== null) {
+            connexion.end();
+        }
+    }
 }
 
 async function remove(id) {
@@ -109,11 +144,28 @@ async function getEmail(email) {
     }
 }
 
+async function updatePassword(id, hashedPassword) {
+    let connexion = null;
+    try{
+        connexion = await database.getConnection();
+        await connexion.execute(SQL_UPDATE_PASSWORD, [hashedPassword, id]);
+        return true;
+    } catch(e) {
+        log.error("Error in update password dao : " + e);
+    } finally {
+        if (connexion !== null) {
+            connexion.end();
+        }
+    }
+}
+
 module.exports = {
     getById,
     getAll,
     register,
     updateUser,
     remove,
-    getEmail
+    getEmail,
+    updatePassword,
+    updateEmail
 }
